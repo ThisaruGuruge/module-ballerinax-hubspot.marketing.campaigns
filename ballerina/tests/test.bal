@@ -17,45 +17,57 @@
 import ballerina/oauth2;
 import ballerina/test;
 import ballerina/time;
+import ballerina/http;
 
-configurable string clientId = ?;
-configurable string clientSecret = ?;
-configurable string refreshToken = ?;
+configurable boolean isLiveTestsEnabled = false;
+configurable string clientId = "testClientId";
+configurable string clientSecret = "testClientSecret";
+configurable string refreshToken = "testRefreshToken";
 
-OAuth2RefreshTokenGrantConfig auth = {
-    clientId,
-    clientSecret,
-    refreshToken,
-    credentialBearer: oauth2:POST_BODY_BEARER
-};
+final Client hsCampaigns = check initClient();
 
-ConnectionConfig config = {auth};
-
-final Client baseClient = check new (config);
+isolated function initClient() returns Client|error {
+    if isLiveTestsEnabled {
+        OAuth2RefreshTokenGrantConfig auth = {
+            clientId,
+            clientSecret,
+            refreshToken,
+            credentialBearer: oauth2:POST_BODY_BEARER
+        };
+        return new ({auth});
+    }
+    return new ({
+        auth: {
+            token: "testToken"
+        }
+    }, serviceUrl = "http://localhost:9090/marketing/v3/campaigns");
+}
 
 string campaignGuid2 = "";
-configurable string campaignGuid = ?;
-configurable string assetType = ?;
-configurable string assetID = ?;
+configurable string campaignGuid = "c4573779-0830-4eb3-bfa3-0916bda9c1a4";
+configurable string assetType = "FORM";
+configurable string assetID = "";
 
-configurable string sampleCampaignGuid1 = ?;
-configurable string sampleCampaignGuid2 = ?;
-configurable string sampleCampaignGuid3 = ?;
-configurable string sampleCampaignGuid4 = ?;
+configurable string sampleCampaignGuid1 = "";
+configurable string sampleCampaignGuid2 = "";
+configurable string sampleCampaignGuid3 = "";
+configurable string sampleCampaignGuid4 = "";
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testGetSearchMarketingCampaigns() returns error? {
-    CollectionResponseWithTotalPublicCampaignForwardPaging response = check baseClient->/.get();
-    test:assertTrue(response?.results.length() > 0);
+    CollectionResponseWithTotalPublicCampaignForwardPaging response = check hsCampaigns->/.get();
+    test:assertTrue(response.results.length() > 0);
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 function testPostCreateMarketingCampaigns() returns error? {
-    PublicCampaign response = check baseClient->/.post(
+    PublicCampaign response = check hsCampaigns->/.post(
         payload = {
             properties: {
                 "hs_name": "campaign" + time:utcNow().toString(),
@@ -64,23 +76,25 @@ function testPostCreateMarketingCampaigns() returns error? {
             }
         }
     );
-    test:assertNotEquals(response?.id, "");
+    test:assertNotEquals(response.id, "");
     campaignGuid2 = response?.id;
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testGetReadACampaign() returns error? {
-    PublicCampaignWithAssets response = check baseClient->/[campaignGuid];
+    PublicCampaignWithAssets response = check hsCampaigns->/[campaignGuid];
     test:assertEquals(response?.id, campaignGuid);
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testPatchUpdateCampaigns() returns error? {
-    PublicCampaign response = check baseClient->/[campaignGuid].patch(
+    PublicCampaign response = check hsCampaigns->/[campaignGuid].patch(
         payload = {
             properties: {
                 "hs_goal": "updatedCampaignGoal",
@@ -92,10 +106,11 @@ isolated function testPatchUpdateCampaigns() returns error? {
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testPostBatchCreate() returns error? {
-    BatchResponsePublicCampaign|BatchResponsePublicCampaignWithErrors response = check baseClient->/batch/create.post(
+    BatchResponsePublicCampaign|BatchResponsePublicCampaignWithErrors response = check hsCampaigns->/batch/create.post(
         payload = {
             "inputs": [
                 {
@@ -111,10 +126,11 @@ isolated function testPostBatchCreate() returns error? {
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testPostBatchUpdate() returns error? {
-    BatchResponsePublicCampaign|BatchResponsePublicCampaignWithErrors response = check baseClient->/batch/update.post(
+    BatchResponsePublicCampaign|BatchResponsePublicCampaignWithErrors response = check hsCampaigns->/batch/update.post(
         payload = {
             "inputs": [
                 {
@@ -131,11 +147,12 @@ isolated function testPostBatchUpdate() returns error? {
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testPostBatchRead() returns error? {
     BatchResponsePublicCampaignWithAssets|BatchResponsePublicCampaignWithAssetsWithErrors response =
-        check baseClient->/batch/read.post(
+        check hsCampaigns->/batch/read.post(
         payload = {
             "inputs": [
                 {
@@ -148,62 +165,69 @@ isolated function testPostBatchRead() returns error? {
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testGetReportsRevenue() returns error? {
-    RevenueAttributionAggregate response = check baseClient->/[campaignGuid]/reports/revenue;
+    RevenueAttributionAggregate response = check hsCampaigns->/[campaignGuid]/reports/revenue;
     test:assertTrue(response?.revenueAmount is decimal);
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testGetReportsMetrics() returns error? {
-    MetricsCounters response = check baseClient->/[campaignGuid]/reports/metrics;
+    MetricsCounters response = check hsCampaigns->/[campaignGuid]/reports/metrics;
     test:assertTrue(response?.sessions >= 0);
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testGetListAssets() returns error? {
-    CollectionResponsePublicCampaignAssetForwardPaging response = check baseClient->/[campaignGuid]/assets/[assetType];
+    CollectionResponsePublicCampaignAssetForwardPaging response = check hsCampaigns->/[campaignGuid]/assets/[assetType];
     test:assertTrue(response?.results.length() > 0);
 
 }
 
 @test:Config {
     dependsOn: [testDeleteRemoveAssetAssociation],
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testPutAddAssetAssociation() returns error? {
-    var response = check baseClient->/[campaignGuid]/assets/[assetType]/[assetID].put();
+    http:Response response = check hsCampaigns->/[campaignGuid]/assets/[assetType]/[assetID].put();
     test:assertEquals(response.statusCode, 204);
 }
 
 @test:Config {
     dependsOn: [testGetListAssets],
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testDeleteRemoveAssetAssociation() returns error? {
-    var response = check baseClient->/[campaignGuid]/assets/[assetType]/[assetID].delete();
+    http:Response response = check hsCampaigns->/[campaignGuid]/assets/[assetType]/[assetID].delete();
     test:assertEquals(response.statusCode, 204);
 }
 
 @test:Config {
     dependsOn: [testPostCreateMarketingCampaigns],
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 function testDeleteCampaign() returns error? {
-    var response = check baseClient->/[campaignGuid2].delete();
+    http:Response response = check hsCampaigns->/[campaignGuid2].delete();
     test:assertEquals(response.statusCode, 204);
 }
 
 @test:Config {
-    groups: ["live_tests"]
+    groups: ["live_tests"],
+    enable: isLiveTestsEnabled
 }
 isolated function testPostDeleteABatchOfCampaigns() returns error? {
-    var response = check baseClient->/batch/archive.post(
+    http:Response response = check hsCampaigns->/batch/archive.post(
         payload = {
             "inputs": [
                 {

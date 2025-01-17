@@ -16,8 +16,6 @@
 
 import ballerina/test;
 
-final Client mockClient = check new (config, serviceUrl = "http://localhost:8080/marketing/v3/campaigns");
-
 final string campaignMockGuid = "c4573779-0830-4eb3-bfa3-0916bda9c1a4";
 final string assetMockType = "FORM";
 
@@ -25,7 +23,7 @@ final string assetMockType = "FORM";
     groups: ["mock_tests"]
 }
 isolated function mockTestCreateCampaign() returns error? {
-    PublicCampaign response = check mockClient->/.post(
+    PublicCampaign response = check hsCampaigns->/.post(
         payload = {
             properties: {
                 "hs_name": "campaignMock",
@@ -41,14 +39,14 @@ isolated function mockTestCreateCampaign() returns error? {
     groups: ["mock_tests"]
 }
 isolated function testMockGetReadCampaign() returns error? {
-    PublicCampaignWithAssets response = check baseClient->/[campaignMockGuid];
-    test:assertEquals(response?.id, campaignGuid);
+    PublicCampaignWithAssets response = check hsCampaigns->/[campaignMockGuid];
+    test:assertEquals(response.id, campaignGuid);
 }
 
 @test:Config {
     groups: ["mock_tests"]
 }
 isolated function testMockGetListAssets() returns error? {
-    CollectionResponsePublicCampaignAssetForwardPaging response = check baseClient->/[campaignMockGuid]/assets/[assetMockType];
+    CollectionResponsePublicCampaignAssetForwardPaging response = check hsCampaigns->/[campaignMockGuid]/assets/[assetMockType];
     test:assertTrue(response?.results.length() > 0);
 }

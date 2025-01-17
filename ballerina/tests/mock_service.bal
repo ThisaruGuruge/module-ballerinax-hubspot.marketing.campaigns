@@ -4,7 +4,7 @@ import ballerina/log;
 listener http:Listener httpListener = new (9090);
 
 http:Service mockService = service object {
-    resource function post marketing/v3/campaigns() returns PublicCampaign{
+    resource function post .() returns PublicCampaign{
         return {
             id: "12345_Mock",
             properties: {
@@ -17,7 +17,7 @@ http:Service mockService = service object {
         };
     };
 
-    resource function get marketing/v3/campaigns/[string campaignMockGuid]/assets/FORM() returns CollectionResponsePublicCampaignAssetForwardPaging {
+    resource function get [string campaignMockGuid]/assets/FORM() returns CollectionResponsePublicCampaignAssetForwardPaging {
         return {
             "results": [
         {
@@ -28,7 +28,7 @@ http:Service mockService = service object {
         };
     };
 
-    resource function get marketing/v3/campaigns/[string campaignMockGuid]() returns PublicCampaignWithAssets {
+    resource function get [string campaignMockGuid]() returns PublicCampaignWithAssets {
         return {
             "id": "c4573779-0830-4eb3-bfa3-0916bda9c1a4",
             "properties": {},
@@ -50,6 +50,6 @@ http:Service mockService = service object {
 
 function init() returns error? {
     log:printInfo("Initializing mock service");
-    check httpListener.attach(mockService, "/");
+    check httpListener.attach(mockService, "/marketing/v3/campaigns");
     check httpListener.'start();
 }
